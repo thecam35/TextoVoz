@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Texto a Voz con Descarga</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        select, button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #playBtn {
+            background-color: #2ecc71;
+        }
+        #playBtn:hover {
+            background-color: #27ae60;
+        }
+        #stopBtn {
+            background-color: #e74c3c;
+        }
+        #stopBtn:hover {
+            background-color: #c0392b;
+        }
+        #downloadBtn {
+            background-color: #9b59b6;
+        }
+        #downloadBtn:hover {
+            background-color: #8e44ad;
+        }
+        .voice-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .voice-type {
+            font-weight: bold;
+            color: #3498db;
+        }
+        .voice-female {
+            color: #e91e63;
+        }
+        .voice-male {
+            color: #2196f3;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background: #f1f1f1;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+        .recording-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .recording {
+            background-color: #ffeaa7;
+            color: #d35400;
+        }
+        .processing {
+            background-color: #a5d8ff;
+            color: #0061a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Conversor de Texto a Voz con Descarga</h1>
+        
+        <textarea id="textToSpeak" placeholder="Escribe aquí el texto que quieres convertir a voz..."></textarea>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="spanish">Voces en Español</div>
+            <div class="tab" data-tab="other">Otras Voces</div>
+        </div>
+        
+        <div id="spanish" class="tab-content active">
+            <div class="controls">
+                <select id="spanishVoiceSelect">
+                    <option value="">Cargando voces en español...</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="other" class="tab-content">
+            <div class="controls">
+                <select id="otherVoiceSelect">
+                    <option value="">Cargando otras voces...</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <select id="rateSelect">
+                <option value="0.5">Velocidad: Lenta</option>
+                <option value="1" selected>Velocidad: Normal</option>
+                <option value="1.5">Velocidad: Rápida</option>
+                <option value="2">Velocidad: Muy rápida</option>
+            </select>
+            <select id="pitchSelect">
+                <option value="0.5">Tono: Bajo</option>
+                <option value="1" selected>Tono: Normal</option>
+                <option value="1.5">Tono: Alto</option>
+                <option value="2">Tono: Muy alto</option>
+            </select>
+        </div>
+        
+        <div class="controls">
+            <button id="playBtn">Reproducir</button>
+            <button id="pauseBtn">Pausar</button>
+            <button id="resumeBtn">Continuar</button>
+            <button id="stopBtn">Detener</button>
+            <button id="downloadBtn">Descargar Audio</button>
+        </div>
+        
+        <div id="recordingStatus" class="recording-status recording">
+            Grabando audio para descarga... Habla después del tono.
+        </div>
+        
+        <div id="processingStatus" class="recording-status processing">
+            Procesando audio... Por favor espera.
+        </div>
+        
+        <div class="voice-info">
+            <h3>Instrucciones:</h3>
+            <p>1. Escribe tu texto en el cuadro superior</p>
+            <p>2. Selecciona una voz y ajusta velocidad/tono</p>
+            <p>3. Haz clic en "Reproducir" para escuchar</p>
+            <p>4. Usa "Descargar Audio" para guardar el archivo MP3</p>
+            
+            <h3>Notas sobre la descarga:</h3>
+            <p>- La descarga puede demorar unos segundos mientras se procesa el audio</p>
+            <p>- La calidad depende de tu navegador y las voces disponibles</p>
+            <p>- Algunas voces pueden no funcionar correctamente para descarga</p>
+            
+            <p id="voiceStatus">Cargando voces disponibles...</p>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let speechSynthesis = window.speechSynthesis;
+        let speechUtterance = null;
+        let voices = [];
+        let audioContext;
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        
+        // Elementos del DOM
+        const textToSpeak = document.getElementById('textToSpeak');
+        const spanishVoiceSelect = document.getElementById('spanishVoiceSelect');
+        const otherVoiceSelect = document.getElementById('otherVoiceSelect');
+        const rateSelect = document.getElementById('rateSelect');
+        const pitchSelect = document.getElementById('pitchSelect');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const processingStatus = document.getElementById('processingStatus');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Clasificar voces por género
+        function classifyVoice(voice) {
+            const lowerName = voice.name.toLowerCase();
+            if (lowerName.includes('female') || lowerName.includes('mujer') || lowerName.includes('woman') || lowerName.includes('femenina')) {
+                return 'female';
+            } else if (lowerName.includes('male') || lowerName.includes('hombre') || lowerName.includes('man') || lowerName.includes('masculino')) {
+                return 'male';
+            }
+            return 'unknown';
+        }
+        
+        // Cargar voces disponibles
+        function loadVoices() {
+            voices = speechSynthesis.getVoices();
+            
+            // Filtrar voces en español
+            const spanishVoices = voices.filter(voice => 
+                voice.lang.includes('es') || voice.lang.includes('ES') || 
+                voice.name.toLowerCase().includes('spanish') ||
+                voice.name.toLowerCase().includes('español')
+            );
+            
+            // Otras voces (no español)
+            const otherVoices = voices.filter(voice => 
+                !spanishVoices.includes(voice)
+            );
+            
+            // Ordenar voces en español (femeninas primero)
+            spanishVoices.sort((a, b) => {
+                const aGender = classifyVoice(a);
+                const bGender = classifyVoice(b);
+                
+                if (aGender === 'female' && bGender !== 'female') return -1;
+                if (aGender !== 'female' && bGender === 'female') return 1;
+                return 0;
+            });
+            
+            // Llenar select de voces en español
+            spanishVoiceSelect.innerHTML = '';
+            if (spanishVoices.length > 0) {
+                spanishVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    const gender = classifyVoice(voice);
+                    const genderSymbol = gender === 'female' ? '♀' : gender === 'male' ? '♂' : '';
+                    
+                    option.textContent = `${genderSymbol} ${voice.name} (${voice.lang})`;
+                    option.setAttribute('data-voice-index', voices.indexOf(voice));
+                    option.className = gender === 'female' ? 'voice-female' : gender === 'male' ? 'voice-male' : '';
+                    spanishVoiceSelect.appendChild(option);
+                });
+            } else {
+                spanishVoiceSelect.innerHTML = '<option value="">No se encontraron voces en español</option>';
+            }
+            
+            // Llenar select de otras voces
+            otherVoiceSelect.innerHTML = '';
+            if (otherVoices.length > 0) {
+                otherVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    const gender = classifyVoice(voice);
+                    const genderSymbol = gender === 'female' ? '♀' : gender === 'male' ? '♂' : '';
+                    
+                    option.textContent = `${genderSymbol} ${voice.name} (${voice.lang})`;
+                    option.setAttribute('data-voice-index', voices.indexOf(voice));
+                    option.className = gender === 'female' ? 'voice-female' : gender === 'male' ? 'voice-male' : '';
+                    otherVoiceSelect.appendChild(option);
+                });
+            } else {
+                otherVoiceSelect.innerHTML = '<option value="">No se encontraron otras voces</option>';
+            }
+            
+            // Actualizar estado
+            voiceStatus.innerHTML = `
+                <span class="voice-type">Voces encontradas:</span> 
+                <span class="voice-female">${spanishVoices.filter(v => classifyVoice(v) === 'female').length} femeninas</span>, 
+                <span class="voice-male">${spanishVoices.filter(v => classifyVoice(v) === 'male').length} masculinas</span> en español | 
+                ${otherVoices.length} en otros idiomas
+            `;
+        }
+        
+        // Inicializar
+        speechSynthesis.onvoiceschanged = loadVoices;
+        
+        // Si las voces ya están cargadas cuando el script se ejecuta
+        if (speechSynthesis.getVoices().length > 0) {
+            loadVoices();
+        } else {
+            // Forzar carga de voces en algunos navegadores
+            setTimeout(() => {
+                voices = speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    loadVoices();
+                } else {
+                    voiceStatus.textContent = 'No se pudieron cargar las voces. Recarga la página o prueba en otro navegador.';
+                }
+            }, 1000);
+        }
+        
+        // Configurar AudioContext
+        function setupAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        // Reproducir el texto
+        function speakText() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+            
+            const text = textToSpeak.value.trim();
+            if (text === '') {
+                alert('Por favor escribe algún texto primero.');
+                return;
+            }
+            
+            speechUtterance = new SpeechSynthesisUtterance(text);
+            
+            // Configurar voz seleccionada (según la pestaña activa)
+            const activeTab = document.querySelector('.tab.active').dataset.tab;
+            const voiceSelect = activeTab === 'spanish' ? spanishVoiceSelect : otherVoiceSelect;
+            const selectedOption = voiceSelect.selectedOptions[0];
+            
+            if (selectedOption && selectedOption.value !== '') {
+                const voiceIndex = selectedOption.getAttribute('data-voice-index');
+                speechUtterance.voice = voices[voiceIndex];
+            }
+            
+            // Configurar velocidad y tono
+            speechUtterance.rate = parseFloat(rateSelect.value);
+            speechUtterance.pitch = parseFloat(pitchSelect.value);
+            
+            // Eventos
+            speechUtterance.onend = function() {
+                console.log('Reproducción terminada');
+            };
+            
+            speechUtterance.onerror = function(event) {
+                console.error('Error en la síntesis de voz:', event);
+                alert('Ocurrió un error al reproducir el texto.');
+            };
+            
+            speechSynthesis.speak(speechUtterance);
+        }
+        
+        // Grabar audio para descarga
+        async function recordAndDownload() {
+            const text = textToSpeak.value.trim();
+            if (text === '') {
+                alert('Por favor escribe algún texto primero.');
+                return;
+            }
+            
+            try {
+                setupAudioContext();
+                
+                // Mostrar estado de grabación
+                recordingStatus.style.display = 'block';
+                processingStatus.style.display = 'none';
+                
+                // Crear un stream de audio desde el altavoz (usando un workaround)
+                const dest = audioContext.createMediaStreamDestination();
+                const mediaStream = dest.stream;
+                
+                mediaRecorder = new MediaRecorder(mediaStream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    recordingStatus.style.display = 'none';
+                    processingStatus.style.display = 'block';
+                    
+                    try {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        // Crear enlace de descarga
+                        const a = document.createElement('a');
+                        a.href = audioUrl;
+                        a.download = `voz-generada-${new Date().toISOString().slice(0, 10)}.wav`;
+                        document.body.appendChild(a);
+                        a.click();
+                        
+                        // Limpiar
+                        setTimeout(() => {
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(audioUrl);
+                            processingStatus.style.display = 'none';
+                        }, 100);
+                    } catch (error) {
+                        console.error('Error al procesar audio:', error);
+                        alert('Error al procesar el audio para descarga');
+                        processingStatus.style.display = 'none';
+                    }
+                };
+                
+                // Configurar la síntesis de voz para grabación
+                speechUtterance = new SpeechSynthesisUtterance(text);
+                
+                const activeTab = document.querySelector('.tab.active').dataset.tab;
+                const voiceSelect = activeTab === 'spanish' ? spanishVoiceSelect : otherVoiceSelect;
+                const selectedOption = voiceSelect.selectedOptions[0];
+                
+                if (selectedOption && selectedOption.value !== '') {
+                    const voiceIndex = selectedOption.getAttribute('data-voice-index');
+                    speechUtterance.voice = voices[voiceIndex];
+                }
+                
+                speechUtterance.rate = parseFloat(rateSelect.value);
+                speechUtterance.pitch = parseFloat(pitchSelect.value);
+                
+                // Iniciar grabación
+                mediaRecorder.start();
+                
+                // Pequeña demora para asegurar que la grabación ha comenzado
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Hablar después de iniciar la grabación
+                speechUtterance.onend = () => {
+                    setTimeout(() => {
+                        mediaRecorder.stop();
+                    }, 500);
+                };
+                
+                speechSynthesis.speak(speechUtterance);
+                
+            } catch (error) {
+                console.error('Error en la grabación:', error);
+                alert('Error al iniciar la grabación de audio. Asegúrate de que tu navegador soporte esta función.');
+                recordingStatus.style.display = 'none';
+                processingStatus.style.display = 'none';
+            }
+        }
+        
+        // Event listeners
+        playBtn.addEventListener('click', speakText);
+        
+        pauseBtn.addEventListener('click', function() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+            }
+        });
+        
+        resumeBtn.addEventListener('click', function() {
+            if (speechSynthesis.paused) {
+                speechSynthesis.resume();
+            }
+        });
+        
+        stopBtn.addEventListener('click', function() {
+            if (speechSynthesis.speaking || speechSynthesis.paused) {
+                speechSynthesis.cancel();
+            }
+            if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordingStatus.style.display = 'none';
+            }
+        });
+        
+        downloadBtn.addEventListener('click', recordAndDownload);
+        
+        // Permitir usar Enter en el textarea (Shift+Enter para nueva línea)
+        textToSpeak.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                speakText();
+            }
+        });
+        
+        // Tabs functionality
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
